@@ -5,6 +5,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { getApiUrl } from '../src/getApiUrl';
 
 const JAM_MULAI = ['07:30', '10:15', '13:00', '15:45', '18:30', '20:30'];
 const JAM_SELESAI = ['10:15', '13:00', '15:45', '18:30', '20:30', '22:00'];
@@ -27,9 +28,12 @@ const FormScreen = ({ navigation }) => {
   const [itemsMulai, setItemsMulai] = useState(JAM_MULAI.map(jam => ({ label: jam, value: jam })));
   const [itemsSelesai, setItemsSelesai] = useState(JAM_SELESAI.map(jam => ({ label: jam, value: jam })));
 
-  useEffect(() => { //ruangan
-    fetchRuangan();
-  }, []);
+  useEffect(() => {
+    if (jamMulai && tanggal) {
+      fetchRuangan(); // fetch ulang kalau jam mulai atau tanggal berubah
+    }
+  }, [jamMulai, tanggal]);
+
 
   useEffect(() => {
     if (!jamMulai) {
@@ -64,10 +68,21 @@ const FormScreen = ({ navigation }) => {
 
   const fetchRuangan = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/api/ruangan');
+      const url = await getApiUrl();
+
+      const selectedDate = tanggal.toISOString().split('T')[0];
+      const jam = jamMulai || JAM_MULAI[0]; // fallback kalau belum dipilih
+      let id_slot = 1;
+      if (jam === '07:30') id_slot = 1;
+      else if (jam === '10:15') id_slot = 2;
+      else if (jam === '13:00') id_slot = 3;
+      else if (jam === '15:45') id_slot = 4;
+
+      const res = await axios.get(`${url}/ruangan-tersedia?tanggal=${selectedDate}&id_slot=${id_slot}`);
       setRuanganList(res.data);
     } catch (err) {
-      console.error('Gagal ambil ruangan', err);
+      console.error('Gagal ambil ruangan:', err.message);
+      alert('Gagal memuat ruangan tersedia. Cek koneksi atau waktu yang dipilih.');
     }
   };
 

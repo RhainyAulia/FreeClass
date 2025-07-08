@@ -6,24 +6,13 @@ import {
   FlatList,
   Dimensions,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '../env';
+import { API_URL } from '../env'; // Atau ganti dengan string langsung jika tidak pakai .env
 
-fetch(`${API_URL}/ruangan-terpakai`)
-  .then(response => response.json())
-  .then(data => {
-    // proses data di sini
-  })
-  .catch(error => {
-    // handle error
-  });
+const { width } = Dimensions.get('window');
+const cardSize = (width - 60) / 2;
 
-const response = await axios.get(
-  `${API_URL}/ruangan-terpakai?date=${currentDate}&slot=${slot}`
-);
-  
 const groupRooms = (data, size) => {
   const grouped = [];
   for (let i = 0; i < data.length; i += size) {
@@ -31,9 +20,6 @@ const groupRooms = (data, size) => {
   }
   return grouped;
 };
-
-const { width } = Dimensions.get('window');
-const cardSize = (width - 60) / 2;
 
 const RoomCarousel = () => {
   const [rooms, setRooms] = useState([]);
@@ -47,20 +33,17 @@ const RoomCarousel = () => {
       setError(null);
 
       const now = new Date();
-      const currentDate = now.toISOString().split('T')[0]; // format YYYY-MM-DD
-
-      // JAM SLOT LOGIC (customize sesuai slot sistemmu)
+      const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
       const currentHour = now.getHours();
+
       let slot = 1;
-      if (currentHour >= 7 && currentHour < 10) slot = 1;
-      else if (currentHour >= 10 && currentHour < 13) slot = 2;
+      if (currentHour >= 10 && currentHour < 13) slot = 2;
       else if (currentHour >= 13 && currentHour < 15) slot = 3;
       else if (currentHour >= 15 && currentHour < 18) slot = 4;
       else if (currentHour >= 18 && currentHour < 20) slot = 5;
 
-      // Ganti URL API kamu di sini:
       const response = await axios.get(
-        `${API_URL}/ruangan-terpakai?date=${currentDate}&slot=${slot}`
+        `${API_URL}/ruangan-terpakai?tanggal=${currentDate}&id_slot=${slot}`
       );
 
       const data = response.data;
@@ -91,16 +74,12 @@ const RoomCarousel = () => {
 
   const renderSlide = ({ item }) => (
     <View style={styles.slide}>
-      {Array.isArray(item) ? (
-        item.map((room, idx) => (
-          <View style={styles.card} key={room.id || idx}>
-            <Text style={styles.name}>{room.nama_ruangan || '-'}</Text>
-            <Text style={styles.time}>{room.waktu || '-'}</Text>
-          </View>
-        ))
-      ) : (
-        <Text style={{ color: 'red' }}>Data tidak valid</Text>
-      )}
+      {item.map((room, idx) => (
+        <View style={styles.card} key={room.id || idx}>
+          <Text style={styles.name}>{room.nama_ruangan || '-'}</Text>
+          <Text style={styles.time}>{room.waktu || '-'}</Text>
+        </View>
+      ))}
     </View>
   );
 
