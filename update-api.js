@@ -1,8 +1,9 @@
+// FreeClassApp/tools/updateLaravelEnv.js
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
 
-// Ambil IP lokal otomatis
+// Cari IP lokal
 const interfaces = os.networkInterfaces();
 let ip = null;
 
@@ -19,9 +20,14 @@ if (!ip) {
   process.exit(1);
 }
 
-const apiUrl = `http://${ip}:8000`;
-const content = `export const getApiUrl = () => '${apiUrl}';\n`;
-const filePath = path.join(__dirname, 'src', 'getApiUrl.js');
+const baseUrl = `http://${ip}:8000`;
 
-fs.writeFileSync(filePath, content);
-console.log(`✅ Base URL berhasil diubah ke: ${apiUrl}`);
+//Directory path ke file .env Laravel
+const laravelEnvPath = path.resolve('C:/xampp/htdocs/freeclass/.env');
+
+// Update APP_URL
+let envContent = fs.readFileSync(laravelEnvPath, 'utf8');
+envContent = envContent.replace(/APP_URL=.*/g, `APP_URL=${baseUrl}`);
+fs.writeFileSync(laravelEnvPath, envContent);
+
+console.log(`✅ APP_URL Laravel berhasil diubah ke: ${baseUrl}`);

@@ -24,7 +24,7 @@ const HomeScreen = ({ navigation }) => {
     return () => clearInterval(timer);
   }, []);
 
-  //SearchBar
+  // SearchBar
   const handleCariKode = async () => {
     if (!kodePinjam.trim()) {
       alert('Masukkan kode peminjaman terlebih dahulu');
@@ -53,18 +53,17 @@ const HomeScreen = ({ navigation }) => {
 
       <Text style={styles.heading}>Dashboard</Text>
 
-<View style={styles.searchRow}>
-  <TextInput
-    style={styles.inputInline}
-    placeholder="Masukkan Kode Pinjam"
-    value={kodePinjam}
-    onChangeText={setKodePinjam}
-  />
-  <TouchableOpacity style={styles.searchButton} onPress={handleCariKode}>
-    <Text style={styles.buttonText}>Cek</Text>
-  </TouchableOpacity>
-</View>
-
+      <View style={styles.searchRow}>
+        <TextInput
+          style={styles.inputInline}
+          placeholder="Masukkan Kode Pinjam"
+          value={kodePinjam}
+          onChangeText={setKodePinjam}
+        />
+        <TouchableOpacity style={styles.searchButton} onPress={handleCariKode}>
+          <Text style={styles.buttonText}>Cek</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.date}>{currentTime.format('dddd, D MMMM YYYY')}</Text>
@@ -76,6 +75,11 @@ const HomeScreen = ({ navigation }) => {
         >
           <Text style={styles.buttonText}>Pinjam Kelas</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.subTitle}>Ruangan Yang Sedang Dipakai</Text>
+        <RoomCarousel />
       </View>
 
     </ScrollView>
@@ -166,25 +170,23 @@ const styles = StyleSheet.create({
   activeDot: {
     backgroundColor: '#A855F7',
   },
-
   searchRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: 16,
-},
-inputInline: {
-  flex: 1,
-  backgroundColor: '#fff',
-  borderRadius: 10,
-  padding: 12,
-  elevation: 2,
-  marginRight: 8,
-},
-searchButton: {
-  backgroundColor: '#6366F1',
-  borderRadius: 10,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-},
-
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  inputInline: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 12,
+    elevation: 2,
+    marginRight: 8,
+  },
+  searchButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
 });

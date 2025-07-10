@@ -1,58 +1,91 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Clipboard,
   ToastAndroid,
+  ActivityIndicator,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import axios from 'axios';
 import { getApiUrl } from '../src/getApiUrl.js';
 import HeaderLogo from '../components/HeaderLogo.js';
 
 const DetailPeminjamanScreen = ({ navigation, route }) => {
-  // Data dummy dari parameter route atau props
-  const data = route?.params?.data || {
-    kode: 'FC20250612001',
-    status: 'PENDING',
-    nama: 'John Doe',
-    tanggal: 'Kamis, 12 Juni 2025',
-    waktu: '13.00 - 15.30 WIB',
-    tujuan: 'Belajar Bersama',
-  };
+  const kode = route?.params?.dataPeminjaman?.kode_peminjaman;
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const apiUrl = await getApiUrl();
+        const response = await axios.get(`${apiUrl}/api/peminjaman/${kode}`);
+        setData(response.data.data);
+      } catch (err) {
+        Alert.alert('Gagal mengambil data', err.response?.data?.message || err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [kode]);
 
   const handleCopy = () => {
-    Clipboard.setString(data.kode);
+    Clipboard.setString(data.kode_peminjaman);
     ToastAndroid.show('Kode disalin ke clipboard', ToastAndroid.SHORT);
   };
 
   const handleCancel = () => {
     Alert.alert(
       'Batalkan Peminjaman',
-        'Yakin ingin batalkan?',
-        [
-          { text: 'Tidak', style: 'cancel' },
-          {
-            text: 'Ya',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                const apiUrl = await getApiUrl();
-                const kode = data.kode;
-                const res = await axios.put(`${apiUrl}/api/peminjaman/${kode}/batal`);
-                Alert.alert('Berhasil', res.data.message);
-                navigation.navigate('Dashboard');
-              } catch (err) {
-                console.error('Cancel error:', err.response?.data || err.message);
-                Alert.alert('Gagal', err.response?.data?.message || 'Kesalahan server');
-              }
-            },
-          }
-        ]
+      'Yakin ingin batalkan?',
+      [
+        { text: 'Tidak', style: 'cancel' },
+        {
+          text: 'Ya',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const apiUrl = await getApiUrl();
+              const res = await axios.put(`${apiUrl}/api/peminjaman/${kode}/batal`);
+              Alert.alert('Berhasil', res.data.message);
+              navigation.navigate('Dashboard');
+            } catch (err) {
+              Alert.alert('Gagal', err.response?.data?.message || 'Kesalahan server');
+            }
+          },
+        },
+      ]
     );
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#8B5CF6" />
+      </View>
+    );
+  }
+
+  if (!data) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: '#EF4444' }}>Data peminjaman tidak ditemukan.</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backLink}>← Kembali</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const waktu = `${data.jam_mulai?.slice(0, 5)} - ${data.jam_selesai?.slice(0, 5)}`;
+  const tanggalFormatted = new Date(data.tanggal).toLocaleDateString('id-ID', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
 
   return (
     <View style={styles.container}>
@@ -64,14 +97,14 @@ const DetailPeminjamanScreen = ({ navigation, route }) => {
 
       <View style={styles.card}>
         <Text style={styles.label}>Status</Text>
-          <Text style={[styles.value, styles.status]}>
-            {data.status?.toLowerCase() === 'Menunggu' ? 'PENDING' : data.status?.toUpperCase()}
-          </Text>
+        <Text style={[styles.value, styles.status]}>
+          {data.status === 'menunggu' ? 'PENDING' : data.status.toUpperCase()}
+        </Text>
 
         <View style={styles.kodeRow}>
           <View>
             <Text style={styles.label}>Kode Peminjaman</Text>
-            <Text style={styles.kode}>{data.kode}</Text>
+            <Text style={styles.kode}>{data.kode_peminjaman}</Text>
           </View>
           <TouchableOpacity onPress={handleCopy}>
             <Text style={styles.copyText}>📋</Text>
@@ -81,13 +114,13 @@ const DetailPeminjamanScreen = ({ navigation, route }) => {
 
       <View style={styles.infoCard}>
         <Text style={styles.bold}>Nama Peminjam</Text>
-        <Text style={styles.normal}>{data.nama}</Text>
+        <Text style={styles.normal}>{data.nama_peminjam}</Text>
 
         <Text style={styles.bold}>Tanggal</Text>
-        <Text style={styles.normal}>{data.tanggal}</Text>
+        <Text style={styles.normal}>{tanggalFormatted}</Text>
 
         <Text style={styles.bold}>Waktu</Text>
-        <Text style={styles.normal}>{data.waktu}</Text>
+        <Text style={styles.normal}>{waktu}</Text>
 
         <Text style={styles.bold}>Tujuan Pinjam</Text>
         <Text style={styles.normal}>{data.tujuan}</Text>
@@ -130,17 +163,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 20,
     fontWeight: 'bold',
-  },
-  logo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  brand: {
-    color: '#8B5CF6',
-  },
-  brandBlack: {
-    color: '#111827',
   },
   card: {
     backgroundColor: '#fff',

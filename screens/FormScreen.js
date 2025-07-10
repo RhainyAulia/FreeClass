@@ -7,6 +7,7 @@ import axios from 'axios';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { useNavigation } from '@react-navigation/native';
 import { getApiUrl } from '../src/getApiUrl.js';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 
 const JAM_MULAI = ['07:30', '10:15', '13:00', '15:45', '18:30', '20:30'];
 const JAM_SELESAI = ['10:15', '13:00', '15:45', '18:30', '20:30', '22:00'];
@@ -95,18 +96,16 @@ const handleSubmit = async () => {
     const response = await axios.post(`${apiUrl}/api/peminjaman`, data);
 
     const dataPeminjaman = response.data.data;
-    const kode = response.data.kode_peminjaman;
 
-    // Navigasi ke StatusScreen, kirim data peminjaman dan kode
     navigation.navigate('Detail', {
       dataPeminjaman: {
-        kode_peminjaman: res.data.kode,
-        status: 'PENDING',
-        nama_peminjam: nama,
-        tanggal: tanggalFormatted,
-        jam_mulai: jamMulai,
-        jam_selesai: jamSelesai,
-        tujuan: tujuan,
+        kode_peminjaman: dataPeminjaman.kode_peminjaman,
+        status: dataPeminjaman.status,
+        nama_peminjam: dataPeminjaman.nama_peminjam,
+        tanggal: dataPeminjaman.tanggal,
+        jam_mulai: dataPeminjaman.jam_mulai,
+        jam_selesai: dataPeminjaman.jam_selesai,
+        tujuan: dataPeminjaman.tujuan,
       },
     });
   } catch (error) {
@@ -116,126 +115,135 @@ const handleSubmit = async () => {
 };
 
   return (
-    <ScrollView
-    contentContainerStyle={styles.container}
-    keyboardShouldPersistTaps="handled"
-    nestedScrollEnabled={true}
-  >
-    <View style={styles.headerPurple}>
-      <Text style={styles.heading}>Pinjam Kelas</Text>
-    </View>
 
-      <View style={styles.formWrapper}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Kembali ke Dashboard</Text>
-        </TouchableOpacity>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
 
-        <Text style={styles.label}>Nama Peminjam</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="John Doe"
-          placeholderTextColor="#9CA3AF"
-          value={namaPeminjam}
-          onChangeText={setNamaPeminjam}
-        />
-
-        <Text style={styles.label}>Jabatan / Posisi</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Mahasiswa / Dosen"
-          placeholderTextColor="#9CA3AF"
-          value={jabatan}
-          onChangeText={setJabatan}
-        />
-
-        <Text style={styles.label}>NPM / NIP</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="232310000"
-          placeholderTextColor="#9CA3AF"
-          value={npm}
-          onChangeText={setNpm}
-        />
-
-        <Text style={styles.label}>Tanggal</Text>
-        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-          <Text>{tanggal.toLocaleDateString('id-ID')}</Text>
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={tanggal}
-            mode="date"
-            display="calendar"
-            minimumDate={new Date()}
-            maximumDate={new Date(new Date().setMonth(new Date().getMonth() + 3))}
-            onChange={(event, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) setTanggal(selectedDate);
-            }}
-          />
-        )}
-
-        <Text style={styles.label}>Waktu</Text>
-        <View style={[styles.rowTime, { zIndex: 999 }]}>
-          <View style={{ flex: 1, marginRight: 8, zIndex: openMulai ? 1000 : 1 }}>
-            <DropDownPicker
-              open={openMulai}
-              value={jamMulai}
-              items={itemsMulai}
-              setOpen={setOpenMulai}
-              setValue={setJamMulai}
-              setItems={setItemsMulai}
-              placeholder="Jam Mulai"
-              placeholderTextColor="#9CA3AF"
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownContainer}
-              selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
-              selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
-            />
-          </View>
-
-          <View style={{ flex: 1, zIndex: openSelesai ? 999 : 0 }}>
-            <DropDownPicker
-              open={openSelesai}
-              value={jamSelesai}
-              items={itemsSelesai}
-              setOpen={setOpenSelesai}
-              setValue={setJamSelesai}
-              setItems={setItemsSelesai}
-              placeholder="Jam Selesai"
-              placeholderTextColor="#9CA3AF"
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownContainer}
-              selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
-              selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
-            />
-          </View>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true}
+      >
+        <View style={styles.headerPurple}>
+          <Text style={styles.heading}>Pinjam Kelas</Text>
         </View>
 
-        <Text style={styles.label}>Tujuan Peminjaman</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Belajar Bersama"
-          placeholderTextColor="#9CA3AF"
-          value={tujuan}
-          onChangeText={setTujuan}
-        />
+        <View style={styles.formWrapper}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Kembali ke Dashboard</Text>
+          </TouchableOpacity>
 
-        <Text style={styles.label}>Jumlah Orang</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="30"
-          placeholderTextColor="#9CA3AF"
-          keyboardType="numeric"
-          value={jumlahOrang}
-          onChangeText={setJumlahOrang}
-        />
+          <Text style={styles.label}>Nama Peminjam</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="John Doe"
+            placeholderTextColor="#9CA3AF"
+            value={namaPeminjam}
+            onChangeText={setNamaPeminjam}
+          />
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Ajukan</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <Text style={styles.label}>Jabatan / Posisi</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Mahasiswa / Dosen"
+            placeholderTextColor="#9CA3AF"
+            value={jabatan}
+            onChangeText={setJabatan}
+          />
+
+          <Text style={styles.label}>NPM / NIP</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="232310000"
+            placeholderTextColor="#9CA3AF"
+            value={npm}
+            onChangeText={setNpm}
+          />
+
+          <Text style={styles.label}>Tanggal</Text>
+          <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+            <Text>{tanggal.toLocaleDateString('id-ID')}</Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={tanggal}
+              mode="date"
+              display="calendar"
+              minimumDate={new Date()}
+              maximumDate={new Date(new Date().setMonth(new Date().getMonth() + 3))}
+              onChange={(event, selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) setTanggal(selectedDate);
+              }}
+            />
+          )}
+
+          <Text style={styles.label}>Waktu</Text>
+          <View style={[styles.rowTime, { zIndex: 999 }]}>
+            <View style={{ flex: 1, marginRight: 8, zIndex: openMulai ? 1000 : 1 }}>
+              <DropDownPicker
+                open={openMulai}
+                value={jamMulai}
+                items={itemsMulai}
+                setOpen={setOpenMulai}
+                setValue={setJamMulai}
+                setItems={setItemsMulai}
+                placeholder="Jam Mulai"
+                placeholderTextColor="#9CA3AF"
+                style={styles.dropdown}
+                dropDownContainerStyle={styles.dropdownContainer}
+                selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
+                selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
+              />
+            </View>
+
+            <View style={{ flex: 1, zIndex: openSelesai ? 999 : 0 }}>
+              <DropDownPicker
+                open={openSelesai}
+                value={jamSelesai}
+                items={itemsSelesai}
+                setOpen={setOpenSelesai}
+                setValue={setJamSelesai}
+                setItems={setItemsSelesai}
+                placeholder="Jam Selesai"
+                placeholderTextColor="#9CA3AF"
+                style={styles.dropdown}
+                dropDownContainerStyle={styles.dropdownContainer}
+                selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
+                selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
+              />
+            </View>
+          </View>
+
+          <Text style={styles.label}>Tujuan Peminjaman</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Belajar Bersama"
+            placeholderTextColor="#9CA3AF"
+            value={tujuan}
+            onChangeText={setTujuan}
+          />
+
+          <Text style={styles.label}>Jumlah Orang</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="30"
+            placeholderTextColor="#9CA3AF"
+            keyboardType="numeric"
+            value={jumlahOrang}
+            onChangeText={setJumlahOrang}
+          />
+
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Ajukan</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+    </KeyboardAvoidingView>
   );
 };
 
