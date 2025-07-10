@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
-import { getApiUrl } from '../src/getApiUrl.js'; 
+import { getApiUrl } from '../src/getApiUrl.js';
 
 const { width } = Dimensions.get('window');
 const cardSize = (width - 60) / 2;
@@ -22,48 +22,44 @@ const groupRooms = (data, size) => {
 };
 
 const RoomCarousel = () => {
-const [rooms, setRooms] = useState([]);
-const [loading, setLoading] = useState(true);
-const [activeIndex, setActiveIndex] = useState(0);
-const [error, setError] = useState(null);
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [error, setError] = useState(null);
 
-const fetchRooms = async () => {
-  try {
-    setLoading(true);
-    setError(null);
+  const fetchRooms = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const now = new Date();
-    const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
-    const currentHour = now.getHours();
+      const API_URL = await getApiUrl();
+      const now = new Date();
+      const currentDate = now.toISOString().split('T')[0];
+      const currentHour = now.getHours();
 
-    let slot = 1;
-    if (currentHour >= 10 && currentHour < 13) slot = 2;
-    else if (currentHour >= 13 && currentHour < 15) slot = 3;
-    else if (currentHour >= 15 && currentHour < 18) slot = 4;
-    else if (currentHour >= 18 && currentHour < 20) slot = 5;
+      let slot = 1;
+      if (currentHour >= 10 && currentHour < 13) slot = 2;
+      else if (currentHour >= 13 && currentHour < 15) slot = 3;
+      else if (currentHour >= 15 && currentHour < 18) slot = 4;
+      else if (currentHour >= 18 && currentHour < 20) slot = 5;
 
-  const API_URL = await getApiUrl();
-  const endpoint = `${API_URL}/ruangan-terpakai?tanggal=${currentDate}&id_slot=${slot}`;
-  console.log('🌐 Fetching from:', endpoint); // ← WAJIB
+      const endpoint = `${API_URL}/ruangan-terpakai?tanggal=${currentDate}&id_slot=${slot}`;
+      console.log('📡 FETCH:', endpoint);
+      const res = await axios.get(endpoint);
+      console.log('📥 RESPONSE:', res.data);
 
-  const response = await axios.get(endpoint);
-  console.log('📥 Data diterima:', response.data); // ← LIHAT APA ADA ARRAY
+      if (!Array.isArray(res.data)) {
+        throw new Error('Format data tidak valid (bukan array)');
+      }
 
-
-    if (!Array.isArray(data)) {
-      throw new Error('Format data tidak valid. Harus array.');
+      setRooms(res.data);
+    } catch (err) {
+      console.error('❌ ERROR FETCH:', err.message);
+      setError('Gagal memuat data. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
     }
-
-    setRooms(data);
-  } catch (err) {
-    console.error('❌ Gagal mengambil data ruangan:', err.message);
-    setError('Gagal memuat data. Silakan coba lagi.');
-  } finally {
-    setLoading(false);
-  }
-
-  
-};
+  }; // ✅ ← PENUTUP fungsi fetchRooms, ini wajib!
 
   useEffect(() => {
     fetchRooms();
@@ -79,7 +75,7 @@ const fetchRooms = async () => {
   const renderSlide = ({ item }) => (
     <View style={styles.slide}>
       {item.map((room, idx) => (
-        <View style={styles.card} key={room.id || idx}>
+        <View style={styles.card} key={room.id_ruangan || idx}>
           <Text style={styles.name}>{room.nama_ruangan || '-'}</Text>
           <Text style={styles.time}>{room.waktu || '-'}</Text>
         </View>

@@ -1,16 +1,12 @@
-let API_URL = '';
-
 export const getApiUrl = async () => {
-  if (API_URL) return API_URL;
-
   try {
-    const res = await fetch('https://6afaf54354d1.ngrok-free.app/api_url.json');
+    const timestamp = Date.now(); // anti-cache
+    const res = await fetch(`https://546e3c0559a3.ngrok-free.app/api_url.json?${timestamp}`);
     const json = await res.json();
-    API_URL = json.url;
-    console.log('📦 API_URL dari api_url.json:', API_URL); // ← LOG WAJIB
-    return API_URL;
+    console.log('📦 API_URL dari api_url.json:', json.url);
+    return json.url;
   } catch (err) {
-    console.error('❌ Gagal fetch api_url.json:', err);
+    console.error('❌ Gagal fetch api_url.json:', err.message);
     return '';
   }
 };
