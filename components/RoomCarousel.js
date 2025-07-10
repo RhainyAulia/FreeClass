@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '../env'; // Atau ganti dengan string langsung jika tidak pakai .env
+import { getApiUrl } from '../src/getApiUrl.js'; 
 
 const { width } = Dimensions.get('window');
 const cardSize = (width - 60) / 2;
@@ -22,44 +22,48 @@ const groupRooms = (data, size) => {
 };
 
 const RoomCarousel = () => {
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [error, setError] = useState(null);
+const [rooms, setRooms] = useState([]);
+const [loading, setLoading] = useState(true);
+const [activeIndex, setActiveIndex] = useState(0);
+const [error, setError] = useState(null);
 
-  const fetchRooms = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+const fetchRooms = async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-      const now = new Date();
-      const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
-      const currentHour = now.getHours();
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const currentHour = now.getHours();
 
-      let slot = 1;
-      if (currentHour >= 10 && currentHour < 13) slot = 2;
-      else if (currentHour >= 13 && currentHour < 15) slot = 3;
-      else if (currentHour >= 15 && currentHour < 18) slot = 4;
-      else if (currentHour >= 18 && currentHour < 20) slot = 5;
+    let slot = 1;
+    if (currentHour >= 10 && currentHour < 13) slot = 2;
+    else if (currentHour >= 13 && currentHour < 15) slot = 3;
+    else if (currentHour >= 15 && currentHour < 18) slot = 4;
+    else if (currentHour >= 18 && currentHour < 20) slot = 5;
 
-      const response = await axios.get(
-        `${API_URL}/ruangan-terpakai?tanggal=${currentDate}&id_slot=${slot}`
-      );
+  const API_URL = await getApiUrl();
+  const endpoint = `${API_URL}/ruangan-terpakai?tanggal=${currentDate}&id_slot=${slot}`;
+  console.log('🌐 Fetching from:', endpoint); // ← WAJIB
 
-      const data = response.data;
+  const response = await axios.get(endpoint);
+  console.log('📥 Data diterima:', response.data); // ← LIHAT APA ADA ARRAY
 
-      if (!Array.isArray(data)) {
-        throw new Error('Format data tidak valid. Harus array.');
-      }
 
-      setRooms(data);
-    } catch (err) {
-      console.error('Gagal mengambil data ruangan:', err.message);
-      setError('Gagal memuat data. Silakan coba lagi.');
-    } finally {
-      setLoading(false);
+    if (!Array.isArray(data)) {
+      throw new Error('Format data tidak valid. Harus array.');
     }
-  };
+
+    setRooms(data);
+  } catch (err) {
+    console.error('❌ Gagal mengambil data ruangan:', err.message);
+    setError('Gagal memuat data. Silakan coba lagi.');
+  } finally {
+    setLoading(false);
+  }
+
+  
+};
 
   useEffect(() => {
     fetchRooms();
