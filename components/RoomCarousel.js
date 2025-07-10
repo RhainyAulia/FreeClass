@@ -48,6 +48,10 @@ const RoomCarousel = () => {
       const res = await axios.get(endpoint);
       console.log('📥 RESPONSE:', res.data);
 
+      console.log('📥 RES DATA TYPE:', typeof res.data);
+      console.log('📥 RES DATA VALUE:', res.data);
+
+
       if (!Array.isArray(res.data)) {
         throw new Error('Format data tidak valid (bukan array)');
       }
@@ -59,7 +63,7 @@ const RoomCarousel = () => {
     } finally {
       setLoading(false);
     }
-  }; // ✅ ← PENUTUP fungsi fetchRooms, ini wajib!
+  }; 
 
   useEffect(() => {
     fetchRooms();

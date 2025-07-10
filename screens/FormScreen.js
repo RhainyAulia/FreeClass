@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert
+  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { getApiUrl } from '../src/getApiUrl';
+import { useNavigation } from '@react-navigation/native';
+import { getApiUrl } from '../src/getApiUrl.js';
 
 const JAM_MULAI = ['07:30', '10:15', '13:00', '15:45', '18:30', '20:30'];
 const JAM_SELESAI = ['10:15', '13:00', '15:45', '18:30', '20:30', '22:00'];
 
-const FormScreen = ({ navigation }) => {
+const SLOT_WAKTU = {
+  '07:30': 1,
+  '10:15': 2,
+  '13:00': 3,
+  '15:45': 4,
+  '18:30': 5,
+  '20:30': 6,
+};
+
+const FormScreen = () => {
+  const navigation = useNavigation();
+
   const [namaPeminjam, setNamaPeminjam] = useState('');
   const [npm, setNpm] = useState('');
   const [jabatan, setJabatan] = useState('');
@@ -18,8 +30,6 @@ const FormScreen = ({ navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tujuan, setTujuan] = useState('');
   const [jumlahOrang, setJumlahOrang] = useState('');
-  const [idRuangan, setIdRuangan] = useState('');
-  const [ruanganList, setRuanganList] = useState([]);
 
   const [jamMulai, setJamMulai] = useState(null);
   const [jamSelesai, setJamSelesai] = useState(null);
@@ -27,13 +37,6 @@ const FormScreen = ({ navigation }) => {
   const [openSelesai, setOpenSelesai] = useState(false);
   const [itemsMulai, setItemsMulai] = useState(JAM_MULAI.map(jam => ({ label: jam, value: jam })));
   const [itemsSelesai, setItemsSelesai] = useState(JAM_SELESAI.map(jam => ({ label: jam, value: jam })));
-
-  useEffect(() => {
-    if (jamMulai && tanggal) {
-      fetchRuangan(); // fetch ulang kalau jam mulai atau tanggal berubah
-    }
-  }, [jamMulai, tanggal]);
-
 
   useEffect(() => {
     if (!jamMulai) {
@@ -51,7 +54,6 @@ const FormScreen = ({ navigation }) => {
 
     setItemsSelesai(filtered.map(jam => ({ label: jam, value: jam })));
 
-    // Reset jamSelesai jika tidak valid
     if (jamSelesai) {
       const [jmH, jmM] = jamMulai.split(':').map(Number);
       const [jsH, jsM] = jamSelesai.split(':').map(Number);
@@ -64,67 +66,47 @@ const FormScreen = ({ navigation }) => {
     }
   }, [jamMulai]);
 
+const handleSubmit = async () => {
+  if (
+    !namaPeminjam || !npm || !jabatan || !tujuan || !jumlahOrang ||
+    !jamMulai || !jamSelesai
+  ) {
+    alert('Semua kolom wajib diisi!');
+    return;
+  }
 
+  const slotId = SLOT_WAKTU[jamMulai];
+  const idRuangan = 16; // sementara default ruangan
 
-  const fetchRuangan = async () => {
-    try {
-      const url = await getApiUrl();
-
-      const selectedDate = tanggal.toISOString().split('T')[0];
-      const jam = jamMulai || JAM_MULAI[0]; // fallback kalau belum dipilih
-      let id_slot = 1;
-      if (jam === '07:30') id_slot = 1;
-      else if (jam === '10:15') id_slot = 2;
-      else if (jam === '13:00') id_slot = 3;
-      else if (jam === '15:45') id_slot = 4;
-
-      const res = await axios.get(`${url}/ruangan-tersedia?tanggal=${selectedDate}&id_slot=${id_slot}`);
-      setRuanganList(res.data);
-    } catch (err) {
-      console.error('Gagal ambil ruangan:', err.message);
-      alert('Gagal memuat ruangan tersedia. Cek koneksi atau waktu yang dipilih.');
-    }
+  const data = {
+    nama_peminjam: namaPeminjam,
+    jabatan: jabatan,
+    tanggal: tanggal.toISOString().split('T')[0],
+    jam_mulai: jamMulai,
+    jam_selesai: jamSelesai,
+    id_ruangan: idRuangan,
+    id_slot: slotId,
+    tujuan: tujuan,
+    jumlah_orang: parseInt(jumlahOrang),
   };
 
-  const handleSubmit = async () => {
-    if (
-      !namaPeminjam || !npm || !jabatan || !tujuan || !jumlahOrang ||
-      !idRuangan || !jamMulai || !jamSelesai
-    ) {
-      alert('Semua kolom wajib diisi!');
-      return;
-    }
+  try {
+    const apiUrl = await getApiUrl(); // Ambil URL dari api_url.json
+    const response = await axios.post(`${apiUrl}/api/peminjaman`, data);
 
-    if (JAM_SELESAI.indexOf(jamSelesai) <= JAM_MULAI.indexOf(jamMulai)) {
-      alert('Jam selesai harus setelah jam mulai');
-      return;
-    }
+    const dataPeminjaman = response.data.data;
+    const kode = response.data.kode_peminjaman;
 
-    const data = {
-      nama_peminjam: namaPeminjam,
-      npm_nip_peminjam: npm,
-      jabatan_peminjam: jabatan,
-      tanggal_peminjaman: tanggal.toISOString().split('T')[0],
-      tujuan_peminjaman: tujuan,
-      jumlah_orang: parseInt(jumlahOrang),
-      id_ruangan: parseInt(idRuangan),
-      jam_mulai: jamMulai,
-      jam_selesai: jamSelesai,
-    };
-
-    try {
-      await axios.post('http://localhost:8000/api/peminjaman', data);
-      alert('Peminjaman berhasil dikirim');
-      navigation.goBack();
-    } catch (err) {
-      console.error('Error kirim peminjaman:', err);
-      alert('Terjadi kesalahan saat mengirim data');
-    }
-  };
+    // Navigasi ke StatusScreen, kirim data peminjaman dan kode
+    navigation.navigate('StatusScreen', { dataPeminjaman, kode });
+  } catch (error) {
+    console.error('Gagal kirim data:', error.response?.data || error.message);
+    alert('Gagal mengirim data. Silakan coba lagi.');
+  }
+};
 
   return (
-    <ScrollView contentContainerStyle={styles.container}
-                keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.headerPurple}>
         <Text style={styles.heading}>Pinjam Kelas</Text>
       </View>
@@ -169,15 +151,14 @@ const FormScreen = ({ navigation }) => {
           <DateTimePicker
             value={tanggal}
             mode="date"
-            display="calendar" 
-            minimumDate={new Date()} 
-            maximumDate={new Date(new Date().setMonth(new Date().getMonth() + 3))} // sampai 3 bulan ke depan
+            display="calendar"
+            minimumDate={new Date()}
+            maximumDate={new Date(new Date().setMonth(new Date().getMonth() + 3))}
             onChange={(event, selectedDate) => {
               setShowDatePicker(false);
               if (selectedDate) setTanggal(selectedDate);
             }}
           />
-
         )}
 
         <Text style={styles.label}>Waktu</Text>
@@ -217,7 +198,6 @@ const FormScreen = ({ navigation }) => {
           </View>
         </View>
 
-
         <Text style={styles.label}>Tujuan Peminjaman</Text>
         <TextInput
           style={styles.input}
@@ -236,17 +216,6 @@ const FormScreen = ({ navigation }) => {
           value={jumlahOrang}
           onChangeText={setJumlahOrang}
         />
-
-        <Text style={styles.label}>Pilih Ruangan</Text>
-        {ruanganList.map((r) => (
-          <TouchableOpacity
-            key={r.id_ruangan}
-            style={[styles.selectButton, idRuangan == r.id_ruangan && styles.selected]}
-            onPress={() => setIdRuangan(r.id_ruangan.toString())}
-          >
-            <Text>{r.nama_ruangan} (Lantai {r.lokasi_lantai})</Text>
-          </TouchableOpacity>
-        ))}
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
           <Text style={styles.buttonText}>Ajukan</Text>
@@ -301,7 +270,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginBottom: 20,
-  },  
+  },
   dropdown: {
     borderColor: '#E5E7EB',
     borderRadius: 12,
@@ -309,21 +278,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 12,
   },
-
   dropdownContainer: {
     borderColor: '#E5E7EB',
     borderRadius: 12,
     backgroundColor: '#fff',
     zIndex: 9999,
-  },
-  selectButton: {
-    backgroundColor: '#E5E7EB',
-    padding: 12,
-    marginTop: 6,
-    borderRadius: 10,
-  },
-  selected: {
-    backgroundColor: '#C4B5FD',
   },
   button: {
     backgroundColor: '#10B981',

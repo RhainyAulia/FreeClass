@@ -10,6 +10,8 @@ import {
 import moment from 'moment';
 import HeaderLogo from '../components/HeaderLogo.js';
 import RoomCarousel from '../components/RoomCarousel.js';
+import axios from 'axios';
+import { getApiUrl } from '../src/getApiUrl.js';
 
 const HomeScreen = ({ navigation }) => {
   const [kodePinjam, setKodePinjam] = useState('');
@@ -22,18 +24,46 @@ const HomeScreen = ({ navigation }) => {
     return () => clearInterval(timer);
   }, []);
 
+  const handleCariKode = async () => {
+    if (!kodePinjam.trim()) {
+      alert('Masukkan kode peminjaman terlebih dahulu');
+      return;
+    }
+
+    try {
+      const apiUrl = await getApiUrl();
+      const response = await axios.get(`${apiUrl}/api/peminjaman/${kodePinjam.trim()}`);
+
+      const dataPeminjaman = response.data.data;
+      navigation.navigate('StatusScreen', { dataPeminjaman });
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        alert('Kode peminjaman tidak ditemukan.');
+      } else {
+        alert('Terjadi kesalahan saat mencari data.');
+        console.error('Cari kode error:', error.message);
+      }
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <HeaderLogo />
 
       <Text style={styles.heading}>Dashboard</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Masukkan Kode Pinjam"
-        value={kodePinjam}
-        onChangeText={setKodePinjam}
-      />
+<View style={styles.searchRow}>
+  <TextInput
+    style={styles.inputInline}
+    placeholder="Masukkan Kode Pinjam"
+    value={kodePinjam}
+    onChangeText={setKodePinjam}
+  />
+  <TouchableOpacity style={styles.searchButton} onPress={handleCariKode}>
+    <Text style={styles.buttonText}>Cek</Text>
+  </TouchableOpacity>
+</View>
+
 
       <View style={styles.card}>
         <Text style={styles.date}>{currentTime.format('dddd, D MMMM YYYY')}</Text>
@@ -46,9 +76,6 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.buttonText}>Pinjam Kelas</Text>
         </TouchableOpacity>
       </View>
-
-        <Text style={styles.subTitle}>Ruang yang Sedang Dipakai</Text>
-          <RoomCarousel />
 
     </ScrollView>
   );
@@ -73,7 +100,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 8,
     elevation: 2,
   },
   card: {
@@ -138,4 +165,25 @@ const styles = StyleSheet.create({
   activeDot: {
     backgroundColor: '#A855F7',
   },
+
+  searchRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 16,
+},
+inputInline: {
+  flex: 1,
+  backgroundColor: '#fff',
+  borderRadius: 10,
+  padding: 12,
+  elevation: 2,
+  marginRight: 8,
+},
+searchButton: {
+  backgroundColor: '#6366F1',
+  borderRadius: 10,
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+},
+
 });

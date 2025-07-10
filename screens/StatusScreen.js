@@ -1,77 +1,48 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-const StatusScreen = () => {
-  const [keyword, setKeyword] = useState('');
-  const [result, setResult] = useState([]);
+const StatusScreen = ({ route, navigation }) => {
+  const { dataPeminjaman } = route.params;
 
-  const handleSearch = async () => {
-    try {
-      const data = await AsyncStorage.getItem('peminjaman');
-      const list = data ? JSON.parse(data) : [];
-
-      const filtered = list.filter(
-        (item) =>
-          item.nama.toLowerCase().includes(keyword.toLowerCase()) ||
-          item.id.toString() === keyword
-      );
-
-      if (filtered.length === 0) {
-        alert('Tidak ditemukan', 'Tidak ada peminjaman yang sesuai.');
-      }
-
-      setResult(filtered);
-    } catch (error) {
-      alert('Error', 'Gagal memuat data.');
-    }
-  };
-
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.label}>ID: {item.id}</Text>
-      <Text>Nama: {item.nama}</Text>
-      <Text>Ruangan: {item.ruangan}</Text>
-      <Text>Tanggal: {item.tanggal}</Text>
-      <Text>Jam: {item.jamMulai} - {item.jamSelesai}</Text>
-      <Text style={[
-        styles.status,
-        item.status === 'Disetujui' ? styles.approved :
-        item.status === 'Ditolak' ? styles.rejected :
-        styles.pending
-      ]}>
-        Status: {item.status}
-      </Text>
-    </View>
-  );
+  if (!dataPeminjaman) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Data tidak ditemukan</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.button}>
+          <Text style={styles.buttonText}>Kembali</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Cek Status Peminjaman</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Masukkan Nama atau ID"
-        value={keyword}
-        onChangeText={setKeyword}
-      />
-      <TouchableOpacity style={styles.button} onPress={handleSearch}>
-        <Text style={styles.buttonText}>Cek Status</Text>
-      </TouchableOpacity>
+      <Text style={styles.title}>Status Peminjaman</Text>
 
-      <FlatList
-        data={result}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-        contentContainerStyle={{ paddingTop: 20 }}
-      />
+      <View style={styles.card}>
+        <Text style={styles.label}>Kode: {dataPeminjaman.kode_peminjaman}</Text>
+        <Text>Nama: {dataPeminjaman.nama_peminjam}</Text>
+        <Text>Jabatan: {dataPeminjaman.jabatan}</Text>
+        <Text>Tanggal: {dataPeminjaman.tanggal}</Text>
+        <Text>Jam: {dataPeminjaman.jam_mulai} - {dataPeminjaman.jam_selesai}</Text>
+        <Text>ID Ruangan: {dataPeminjaman.id_ruangan}</Text>
+        <Text>Tujuan: {dataPeminjaman.tujuan}</Text>
+        <Text>Jumlah Orang: {dataPeminjaman.jumlah_orang}</Text>
+        <Text
+          style={[
+            styles.status,
+            dataPeminjaman.status === 'Disetujui' ? styles.approved :
+            dataPeminjaman.status === 'Ditolak' ? styles.rejected :
+            styles.pending
+          ]}
+        >
+          Status: {dataPeminjaman.status}
+        </Text>
+      </View>
+
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.button}>
+        <Text style={styles.buttonText}>Kembali</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -88,39 +59,23 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#8B5CF6',
-    marginBottom: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: '#8B5CF6',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#f3f4f6',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
   },
   label: {
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   status: {
-    marginTop: 6,
+    marginTop: 10,
     fontWeight: 'bold',
+    fontSize: 16,
   },
   approved: {
     color: 'green',
@@ -130,5 +85,15 @@ const styles = StyleSheet.create({
   },
   pending: {
     color: 'orange',
+  },
+  button: {
+    backgroundColor: '#8B5CF6',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
