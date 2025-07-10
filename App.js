@@ -22,6 +22,7 @@ export default function App() {
         <Stack.Screen name="Dashboard" component={HomeScreen} />
         <Stack.Screen name="Form" component={FormScreen} />
         <Stack.Screen name="Status" component={StatusScreen} />
+        <Stack.Screen name="Detail" component={DetailPeminjamanScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

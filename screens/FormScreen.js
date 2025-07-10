@@ -98,7 +98,17 @@ const handleSubmit = async () => {
     const kode = response.data.kode_peminjaman;
 
     // Navigasi ke StatusScreen, kirim data peminjaman dan kode
-    navigation.navigate('StatusScreen', { dataPeminjaman, kode });
+    navigation.navigate('Detail', {
+      dataPeminjaman: {
+        kode_peminjaman: res.data.kode,
+        status: 'PENDING',
+        nama_peminjam: nama,
+        tanggal: tanggalFormatted,
+        jam_mulai: jamMulai,
+        jam_selesai: jamSelesai,
+        tujuan: tujuan,
+      },
+    });
   } catch (error) {
     console.error('Gagal kirim data:', error.response?.data || error.message);
     alert('Gagal mengirim data. Silakan coba lagi.');
@@ -106,10 +116,14 @@ const handleSubmit = async () => {
 };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.headerPurple}>
-        <Text style={styles.heading}>Pinjam Kelas</Text>
-      </View>
+    <ScrollView
+    contentContainerStyle={styles.container}
+    keyboardShouldPersistTaps="handled"
+    nestedScrollEnabled={true}
+  >
+    <View style={styles.headerPurple}>
+      <Text style={styles.heading}>Pinjam Kelas</Text>
+    </View>
 
       <View style={styles.formWrapper}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

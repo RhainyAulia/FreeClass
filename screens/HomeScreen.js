@@ -24,6 +24,7 @@ const HomeScreen = ({ navigation }) => {
     return () => clearInterval(timer);
   }, []);
 
+  //SearchBar
   const handleCariKode = async () => {
     if (!kodePinjam.trim()) {
       alert('Masukkan kode peminjaman terlebih dahulu');
@@ -35,7 +36,7 @@ const HomeScreen = ({ navigation }) => {
       const response = await axios.get(`${apiUrl}/api/peminjaman/${kodePinjam.trim()}`);
 
       const dataPeminjaman = response.data.data;
-      navigation.navigate('StatusScreen', { dataPeminjaman });
+      navigation.navigate('Status', { dataPeminjaman });
     } catch (error) {
       if (error.response && error.response.status === 404) {
         alert('Kode peminjaman tidak ditemukan.');

@@ -8,6 +8,8 @@ import {
   Clipboard,
   ToastAndroid,
 } from 'react-native';
+import axios from 'axios';
+import { getApiUrl } from '../src/getApiUrl.js';
 import HeaderLogo from '../components/HeaderLogo.js';
 
 const DetailPeminjamanScreen = ({ navigation, route }) => {
@@ -29,18 +31,26 @@ const DetailPeminjamanScreen = ({ navigation, route }) => {
   const handleCancel = () => {
     Alert.alert(
       'Batalkan Peminjaman',
-      'Apakah kamu yakin ingin membatalkan peminjaman ini?',
-      [
-        { text: 'Tidak' },
-        {
-          text: 'Ya',
-          onPress: () => {
-            // Tambahkan logika pembatalan di sini
-            Alert.alert('Dibatalkan', 'Peminjaman berhasil dibatalkan');
-            navigation.goBack();
-          },
-        },
-      ]
+        'Yakin ingin batalkan?',
+        [
+          { text: 'Tidak', style: 'cancel' },
+          {
+            text: 'Ya',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const apiUrl = await getApiUrl();
+                const kode = data.kode;
+                const res = await axios.put(`${apiUrl}/api/peminjaman/${kode}/batal`);
+                Alert.alert('Berhasil', res.data.message);
+                navigation.navigate('Dashboard');
+              } catch (err) {
+                console.error('Cancel error:', err.response?.data || err.message);
+                Alert.alert('Gagal', err.response?.data?.message || 'Kesalahan server');
+              }
+            },
+          }
+        ]
     );
   };
 
@@ -54,7 +64,9 @@ const DetailPeminjamanScreen = ({ navigation, route }) => {
 
       <View style={styles.card}>
         <Text style={styles.label}>Status</Text>
-        <Text style={[styles.value, styles.status]}>{data.status}</Text>
+          <Text style={[styles.value, styles.status]}>
+            {data.status?.toLowerCase() === 'Menunggu' ? 'PENDING' : data.status?.toUpperCase()}
+          </Text>
 
         <View style={styles.kodeRow}>
           <View>
