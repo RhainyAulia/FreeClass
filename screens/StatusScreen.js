@@ -1,13 +1,24 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
-import { getApiUrl } from '../src/getApiUrl.js';
+import { getApiUrl } from '../src/getApiUrl';
 
 const StatusScreen = ({ route }) => {
-  const { dataPeminjaman } = route.params;
+  const { dataPeminjaman: initialData } = route.params;
   const navigation = useNavigation();
+  const [dataPeminjaman, setDataPeminjaman] = useState(initialData);
+  const [loading, setLoading] = useState(false);
 
   if (!dataPeminjaman) {
     return (
@@ -38,8 +49,7 @@ const StatusScreen = ({ route }) => {
             try {
               const apiUrl = await getApiUrl();
               const kode = dataPeminjaman.kode_peminjaman;
-
-              const response = await axios.put(`${apiUrl}/api/peminjaman/${kode}/batal`);
+              await axios.put(`${apiUrl}/api/peminjaman/${kode}/batal`);
               Alert.alert('Berhasil', 'Peminjaman berhasil dibatalkan.');
               navigation.navigate('Dashboard');
             } catch (error) {
@@ -51,9 +61,27 @@ const StatusScreen = ({ route }) => {
     );
   };
 
+  const refreshStatus = async () => {
+    try {
+      setLoading(true);
+      const apiUrl = await getApiUrl();
+      const response = await axios.get(`${apiUrl}/api/peminjaman/${dataPeminjaman.kode_peminjaman}`);
+      setDataPeminjaman(response.data.data);
+    } catch (error) {
+      Alert.alert('Gagal Memuat', 'Gagal memperbarui status peminjaman.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statusColor = {
+    menunggu: '#8B5CF6',
+    disetujui: 'green',
+    dibatalkan: 'red',
+  };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Status Peminjaman</Text>
       </View>
@@ -64,21 +92,7 @@ const StatusScreen = ({ route }) => {
         resizeMode="contain"
       />
 
-      <View style={styles.statusCard}>
-        <Text style={styles.statusLabel}>Status</Text>
-        <Text style={[styles.statusText, styles[dataPeminjaman.status?.toLowerCase()] || styles.pending]}>
-          {dataPeminjaman.status?.toUpperCase()}
-        </Text>
-      </View>
-
-      <View style={styles.codeCard}>
-        <Text style={styles.codeLabel}>Kode Peminjaman</Text>
-        <Text style={styles.codeText}>{dataPeminjaman.kode_peminjaman}</Text>
-
-        <TouchableOpacity onPress={salinKode} style={styles.copyButton}>
-          <Text style={styles.copyButtonText}>Salin</Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.codeText}>{dataPeminjaman.kode_peminjaman}</Text>
 
       <View style={styles.detailCard}>
         <Text style={styles.detailLabel}>Nama Peminjam</Text>
@@ -96,9 +110,23 @@ const StatusScreen = ({ route }) => {
         <Text style={styles.detailText}>{dataPeminjaman.tujuan}</Text>
       </View>
 
-      <Text style={styles.note}>
-        Harap mencatat kode peminjaman yang diberikan untuk mengakses status peminjaman
-      </Text>
+      <View style={styles.rowCard}>
+        <View style={styles.rowItem}>
+          <Text style={styles.rowLabel}>Ruang</Text>
+          <Text style={styles.roomText}>{dataPeminjaman.kode_ruangan}</Text>
+        </View>
+        <View style={styles.rowItem}>
+          <Text style={styles.rowLabel}>Status</Text>
+          <Text style={{ fontWeight: 'bold', color: statusColor[dataPeminjaman.status] || '#8B5CF6' }}>
+            {dataPeminjaman.status?.toUpperCase()}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.noteCard}>
+        <Text style={styles.detailLabel}>Catatan</Text>
+        <Text style={styles.detailText}>{dataPeminjaman.catatan || '-'}</Text>
+      </View>
 
       <TouchableOpacity style={styles.cancelButton} onPress={konfirmasiPembatalan}>
         <Text style={styles.cancelButtonText}>Batalkan Peminjaman</Text>
@@ -108,9 +136,20 @@ const StatusScreen = ({ route }) => {
         style={[styles.cancelButton, { backgroundColor: '#6B7280', marginTop: 10 }]}
         onPress={() => navigation.navigate('Dashboard')}
       >
-        <Text style={styles.cancelButtonText}>Kembali ke Beranda</Text>
+        <Text style={styles.cancelButtonText}>Kembali ke Dashboard</Text>
       </TouchableOpacity>
-    </View>
+
+      <TouchableOpacity
+        style={[styles.cancelButton, { backgroundColor: '#10B981', marginTop: 10 }]}
+        onPress={refreshStatus}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.cancelButtonText}>Refresh Status</Text>
+        )}
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 
@@ -118,10 +157,10 @@ export default StatusScreen;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#F9FAFB',
     alignItems: 'center',
     padding: 16,
+    paddingBottom: 40,
   },
   header: {
     backgroundColor: '#C4B5FD',
@@ -130,6 +169,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     alignItems: 'center',
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 20,
@@ -139,64 +179,13 @@ const styles = StyleSheet.create({
   logo: {
     width: 160,
     height: 60,
-    marginVertical: 16,
-  },
-  statusCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 12,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  statusLabel: {
-    fontWeight: '600',
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  statusText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
-  pending: {
-    color: '#8B5CF6',
-  },
-  disetujui: {
-    color: 'green',
-  },
-  ditolak: {
-    color: 'red',
-  },
-  codeCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  codeLabel: {
-    color: '#6B7280',
-    marginBottom: 4,
-    fontSize: 14,
+    marginVertical: 8,
   },
   codeText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    color: '#111827',
-  },
-  copyButton: {
-    marginTop: 8,
-    backgroundColor: '#8B5CF6',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  copyButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#6B7280',
+    marginBottom: 12,
+    fontWeight: '500',
   },
   detailCard: {
     backgroundColor: '#fff',
@@ -215,12 +204,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 4,
   },
-  note: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
+  rowCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: 'space-between',
+    width: '100%',
     marginBottom: 16,
-    paddingHorizontal: 8,
+  },
+  rowItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  rowLabel: {
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  roomText: {
+    fontWeight: 'bold',
+    color: '#8B5CF6',
+    fontSize: 16,
+  },
+  noteCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    marginBottom: 20,
   },
   cancelButton: {
     backgroundColor: '#EF4444',

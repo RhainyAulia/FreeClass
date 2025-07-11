@@ -1,7 +1,6 @@
+// src/updateLaravelEnv.cjs
 const fs = require('fs');
 const path = require('path');
-
-const envPath = path.resolve(__dirname, 'C:/xampp/htdocs/freeclass/.env');
 
 // Ambil URL dari getApiUrl.js
 const getApiUrlPath = path.resolve(__dirname, './getApiUrl.js');
@@ -14,15 +13,19 @@ if (!apiUrl) {
   process.exit(1);
 }
 
+// Laravel paths
+const envPath = 'C:/xampp/htdocs/freeclass/.env';
+const apiJsonPath = 'C:/xampp/htdocs/freeclass/public/api_url.json';
+
 try {
-  // Update APP_URL di Laravel .env
+  // Update APP_URL di Laravel
   let envContent = fs.readFileSync(envPath, 'utf8');
   envContent = envContent.replace(/APP_URL=.*/g, `APP_URL=${apiUrl}`);
   fs.writeFileSync(envPath, envContent);
 
-  // Update api_url.json di FreeClassWeb/public
-  const apiJsonPath = path.resolve(__dirname, 'C:/xampp/htdocs/freeclass/public/api_url.json');
-  fs.writeFileSync(apiJsonPath, JSON.stringify({ url: `${apiUrl}/api` }, null, 2));
+  // Update public/api_url.json
+  const apiJson = { url: `${apiUrl}/api` };
+  fs.writeFileSync(apiJsonPath, JSON.stringify(apiJson, null, 2));
 
   console.log(`✅ APP_URL Laravel diubah ke ${apiUrl}`);
   console.log(`✅ public/api_url.json diperbarui.`);
