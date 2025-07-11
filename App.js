@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { LogBox } from 'react-native';
 
 import SplashScreen from './screens/SplashScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -11,8 +12,13 @@ import DetailPeminjamanScreen from './screens/DetailPeminjamanScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    LogBox.ignoreLogs([
+      'VirtualizedLists should never be nested',
+    ]);
+  }, []);
+
   return (
-    // <DetailPeminjamanScreen />
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Splash"

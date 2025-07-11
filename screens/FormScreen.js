@@ -1,253 +1,197 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import axios from 'axios';
 import DropDownPicker from 'react-native-dropdown-picker';
+import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { getApiUrl } from '../src/getApiUrl.js';
-import { KeyboardAvoidingView, Platform } from 'react-native';
 
-const JAM_MULAI = ['07:30', '10:15', '13:00', '15:45', '18:30', '20:30'];
-const JAM_SELESAI = ['10:15', '13:00', '15:45', '18:30', '20:30', '22:00'];
+// Daftar slot waktu tetap
+const SLOT_ITEMS = [
+  { label: '07:30 - 10:15', value: 1 },
+  { label: '10:15 - 13:00', value: 2 },
+  { label: '13:00 - 15:45', value: 3 },
+  { label: '15:45 - 18:30', value: 4 },
+  { label: '18:30 - 20:30', value: 5 },
+  { label: '20:30 - 22:00', value: 6 },
+];
 
-const SLOT_WAKTU = {
-  '07:30': 1,
-  '10:15': 2,
-  '13:00': 3,
-  '15:45': 4,
-  '18:30': 5,
-  '20:30': 6,
+const SLOT_TO_JAM = {
+  1: { mulai: '07:30', selesai: '10:15' },
+  2: { mulai: '10:15', selesai: '13:00' },
+  3: { mulai: '13:00', selesai: '15:45' },
+  4: { mulai: '15:45', selesai: '18:30' },
+  5: { mulai: '18:30', selesai: '20:30' },
+  6: { mulai: '20:30', selesai: '22:00' },
 };
 
 const FormScreen = () => {
   const navigation = useNavigation();
 
+  // Form state
   const [namaPeminjam, setNamaPeminjam] = useState('');
   const [npm, setNpm] = useState('');
   const [jabatan, setJabatan] = useState('');
   const [tanggal, setTanggal] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [tujuan, setTujuan] = useState('');
   const [jumlahOrang, setJumlahOrang] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const [jamMulai, setJamMulai] = useState(null);
-  const [jamSelesai, setJamSelesai] = useState(null);
-  const [openMulai, setOpenMulai] = useState(false);
-  const [openSelesai, setOpenSelesai] = useState(false);
-  const [itemsMulai, setItemsMulai] = useState(JAM_MULAI.map(jam => ({ label: jam, value: jam })));
-  const [itemsSelesai, setItemsSelesai] = useState(JAM_SELESAI.map(jam => ({ label: jam, value: jam })));
+  // Dropdown slot waktu
+  const [slot, setSlot] = useState(null);
+  const [openSlot, setOpenSlot] = useState(false);
+  const [itemsSlot, setItemsSlot] = useState(SLOT_ITEMS);
 
-  useEffect(() => {
-    if (!jamMulai) {
-      setItemsSelesai(JAM_SELESAI.map(jam => ({ label: jam, value: jam })));
+  const handleSubmit = async () => {
+    // Validasi input
+    if (!namaPeminjam || !npm || !jabatan || !tujuan || !jumlahOrang || !slot) {
+      alert('Semua kolom wajib diisi!');
       return;
     }
 
-    const filtered = JAM_SELESAI.filter(jam => {
-      const [jmH, jmM] = jamMulai.split(':').map(Number);
-      const [jsH, jsM] = jam.split(':').map(Number);
-      const jamMulaiMenit = jmH * 60 + jmM;
-      const jamSelesaiMenit = jsH * 60 + jsM;
-      return jamSelesaiMenit > jamMulaiMenit;
-    });
+    const { mulai, selesai } = SLOT_TO_JAM[slot];
+    const idRuangan = 16; // default ruangan
+    const kodePeminjaman = 'FC' + new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
 
-    setItemsSelesai(filtered.map(jam => ({ label: jam, value: jam })));
+    const data = {
+      kode_peminjaman: kodePeminjaman,
+      nama_peminjam: namaPeminjam,
+      jabatan: jabatan,
+      tanggal: tanggal.toISOString().split('T')[0],
+      jam_mulai: mulai,
+      jam_selesai: selesai,
+      id_ruangan: idRuangan,
+      id_slot: slot,
+      tujuan: tujuan,
+      jumlah_orang: parseInt(jumlahOrang),
+    };
 
-    if (jamSelesai) {
-      const [jmH, jmM] = jamMulai.split(':').map(Number);
-      const [jsH, jsM] = jamSelesai.split(':').map(Number);
-      const jamMulaiMenit = jmH * 60 + jmM;
-      const jamSelesaiMenit = jsH * 60 + jsM;
+    try {
+      const apiUrl = await getApiUrl();
+      const response = await axios.post(`${apiUrl}/api/peminjaman`, data);
+      const dataPeminjaman = response.data.data;
 
-      if (jamSelesaiMenit <= jamMulaiMenit) {
-        setJamSelesai(null);
-      }
+      navigation.navigate('Detail', {
+        dataPeminjaman: {
+          kode_peminjaman: dataPeminjaman.kode_peminjaman,
+          status: dataPeminjaman.status,
+          nama_peminjam: dataPeminjaman.nama_peminjam,
+          tanggal: dataPeminjaman.tanggal,
+          jam_mulai: dataPeminjaman.jam_mulai,
+          jam_selesai: dataPeminjaman.jam_selesai,
+          tujuan: dataPeminjaman.tujuan,
+        },
+      });
+    } catch (error) {
+      console.error('Gagal kirim data:', error.response?.data || error.message);
+      alert('Gagal mengirim data. Silakan coba lagi.');
     }
-  }, [jamMulai]);
-
-const handleSubmit = async () => {
-  if (
-    !namaPeminjam || !npm || !jabatan || !tujuan || !jumlahOrang ||
-    !jamMulai || !jamSelesai
-  ) {
-    alert('Semua kolom wajib diisi!');
-    return;
-  }
-
-  const slotId = SLOT_WAKTU[jamMulai];
-  const idRuangan = 16; // default sementara
-
-  // Buat kode peminjaman di frontend
-  const kodePeminjaman = 'FC' + new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
-
-  const data = {
-    kode_peminjaman: kodePeminjaman, // kirim ke backend
-    nama_peminjam: namaPeminjam,
-    jabatan: jabatan,
-    tanggal: tanggal.toISOString().split('T')[0],
-    jam_mulai: jamMulai,
-    jam_selesai: jamSelesai,
-    id_ruangan: idRuangan,
-    id_slot: slotId,
-    tujuan: tujuan,
-    jumlah_orang: parseInt(jumlahOrang),
   };
 
-  try {
-    const apiUrl = await getApiUrl();
-    const response = await axios.post(`${apiUrl}/api/peminjaman`, data);
-
-    const dataPeminjaman = response.data.data;
-
-    navigation.navigate('Detail', {
-      dataPeminjaman: {
-        kode_peminjaman: dataPeminjaman.kode_peminjaman,
-        status: dataPeminjaman.status,
-        nama_peminjam: dataPeminjaman.nama_peminjam,
-        tanggal: dataPeminjaman.tanggal,
-        jam_mulai: dataPeminjaman.jam_mulai,
-        jam_selesai: dataPeminjaman.jam_selesai,
-        tujuan: dataPeminjaman.tujuan,
-      },
-    });
-  } catch (error) {
-    console.error('Gagal kirim data:', error.response?.data || error.message);
-    alert('Gagal mengirim data. Silakan coba lagi.');
-  }
-};
-
   return (
-
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
+    <ScrollView
+      contentContainerStyle={styles.container}
+      nestedScrollEnabled={true}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
     >
+      <View style={styles.headerPurple}>
+        <Text style={styles.heading}>Pinjam Kelas</Text>
+      </View>
 
-      <View style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled={true}
-      >
-        <View style={styles.headerPurple}>
-          <Text style={styles.heading}>Pinjam Kelas</Text>
-        </View>
+      <View style={styles.formWrapper}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Kembali ke Dashboard</Text>
+        </TouchableOpacity>
 
-        <View style={styles.formWrapper}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Kembali ke Dashboard</Text>
-          </TouchableOpacity>
+        <Text style={styles.label}>Nama Peminjam</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="John Doe"
+          value={namaPeminjam}
+          onChangeText={setNamaPeminjam}
+        />
 
-          <Text style={styles.label}>Nama Peminjam</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="John Doe"
-            placeholderTextColor="#9CA3AF"
-            value={namaPeminjam}
-            onChangeText={setNamaPeminjam}
+        <Text style={styles.label}>Jabatan / Posisi</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Mahasiswa / Dosen / Staff"
+          value={jabatan}
+          onChangeText={setJabatan}
+        />
+
+        <Text style={styles.label}>NPM / NIP</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="232310000"
+          value={npm}
+          onChangeText={setNpm}
+        />
+
+        <Text style={styles.label}>Tanggal</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+          <Text>{tanggal.toLocaleDateString('id-ID')}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={tanggal}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+            minimumDate={new Date()}
+            maximumDate={new Date(new Date().setMonth(new Date().getMonth() + 3))}
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) setTanggal(selectedDate);
+            }}
           />
+        )}
 
-          <Text style={styles.label}>Jabatan / Posisi</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Mahasiswa / Dosen"
-            placeholderTextColor="#9CA3AF"
-            value={jabatan}
-            onChangeText={setJabatan}
-          />
+        <Text style={styles.label}>Waktu Peminjaman</Text>
+        <DropDownPicker
+          open={openSlot}
+          value={slot}
+          items={itemsSlot}
+          setOpen={setOpenSlot}
+          setValue={setSlot}
+          setItems={setItemsSlot}
+          placeholder="Pilih Waktu"
+          style={styles.dropdown}
+          dropDownContainerStyle={styles.dropdownContainer}
+          selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
+          selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
+          zIndex={1000}
+        />
 
-          <Text style={styles.label}>NPM / NIP</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="232310000"
-            placeholderTextColor="#9CA3AF"
-            value={npm}
-            onChangeText={setNpm}
-          />
+        <Text style={styles.label}>Tujuan Peminjaman</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Belajar Kelompok"
+          value={tujuan}
+          onChangeText={setTujuan}
+        />
 
-          <Text style={styles.label}>Tanggal</Text>
-          <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-            <Text>{tanggal.toLocaleDateString('id-ID')}</Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              value={tanggal}
-              mode="date"
-              display="calendar"
-              minimumDate={new Date()}
-              maximumDate={new Date(new Date().setMonth(new Date().getMonth() + 3))}
-              onChange={(event, selectedDate) => {
-                setShowDatePicker(false);
-                if (selectedDate) setTanggal(selectedDate);
-              }}
-            />
-          )}
+        <Text style={styles.label}>Jumlah Orang</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="30"
+          keyboardType="numeric"
+          value={jumlahOrang}
+          onChangeText={setJumlahOrang}
+        />
 
-          <Text style={styles.label}>Waktu</Text>
-          <View style={[styles.rowTime, { zIndex: 999 }]}>
-            <View style={{ flex: 1, marginRight: 8, zIndex: openMulai ? 1000 : 1 }}>
-              <DropDownPicker
-                open={openMulai}
-                value={jamMulai}
-                items={itemsMulai}
-                setOpen={setOpenMulai}
-                setValue={setJamMulai}
-                setItems={setItemsMulai}
-                placeholder="Jam Mulai"
-                placeholderTextColor="#9CA3AF"
-                style={styles.dropdown}
-                dropDownContainerStyle={styles.dropdownContainer}
-                selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
-                selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
-              />
-            </View>
-
-            <View style={{ flex: 1, zIndex: openSelesai ? 999 : 0 }}>
-              <DropDownPicker
-                open={openSelesai}
-                value={jamSelesai}
-                items={itemsSelesai}
-                setOpen={setOpenSelesai}
-                setValue={setJamSelesai}
-                setItems={setItemsSelesai}
-                placeholder="Jam Selesai"
-                placeholderTextColor="#9CA3AF"
-                style={styles.dropdown}
-                dropDownContainerStyle={styles.dropdownContainer}
-                selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
-                selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
-              />
-            </View>
-          </View>
-
-          <Text style={styles.label}>Tujuan Peminjaman</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Belajar Bersama"
-            placeholderTextColor="#9CA3AF"
-            value={tujuan}
-            onChangeText={setTujuan}
-          />
-
-          <Text style={styles.label}>Jumlah Orang</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="30"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="numeric"
-            value={jumlahOrang}
-            onChangeText={setJumlahOrang}
-          />
-
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Ajukan</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </View>
-    </KeyboardAvoidingView>
+        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+          <Text style={styles.buttonText}>Ajukan</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 };
 
