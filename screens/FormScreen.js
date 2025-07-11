@@ -77,9 +77,13 @@ const handleSubmit = async () => {
   }
 
   const slotId = SLOT_WAKTU[jamMulai];
-  const idRuangan = 16; // sementara default ruangan
+  const idRuangan = 16; // default sementara
+
+  // Buat kode peminjaman di frontend
+  const kodePeminjaman = 'FC' + new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
 
   const data = {
+    kode_peminjaman: kodePeminjaman, // kirim ke backend
     nama_peminjam: namaPeminjam,
     jabatan: jabatan,
     tanggal: tanggal.toISOString().split('T')[0],
@@ -92,7 +96,7 @@ const handleSubmit = async () => {
   };
 
   try {
-    const apiUrl = await getApiUrl(); // Ambil URL dari api_url.json
+    const apiUrl = await getApiUrl();
     const response = await axios.post(`${apiUrl}/api/peminjaman`, data);
 
     const dataPeminjaman = response.data.data;

@@ -12,7 +12,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
-import { getApiUrl } from '../src/getApiUrl';
+import { getApiUrl } from '../src/getApiUrl.js';
 
 const StatusScreen = ({ route }) => {
   const { dataPeminjaman: initialData } = route.params;
@@ -49,7 +49,7 @@ const StatusScreen = ({ route }) => {
             try {
               const apiUrl = await getApiUrl();
               const kode = dataPeminjaman.kode_peminjaman;
-              await axios.put(`${apiUrl}/api/peminjaman/${kode}/batal`);
+              const response = await axios.put(`${apiUrl}/api/peminjaman/${kode}/batal`);
               Alert.alert('Berhasil', 'Peminjaman berhasil dibatalkan.');
               navigation.navigate('Dashboard');
             } catch (error) {
@@ -112,8 +112,11 @@ const StatusScreen = ({ route }) => {
 
       <View style={styles.rowCard}>
         <View style={styles.rowItem}>
-          <Text style={styles.rowLabel}>Ruang</Text>
-          <Text style={styles.roomText}>{dataPeminjaman.kode_ruangan}</Text>
+<Text style={styles.rowLabel}>Ruang</Text>
+<Text style={styles.roomText}>
+  {dataPeminjaman.nama_ruangan || dataPeminjaman.kode_ruangan || '-'}
+</Text>
+
         </View>
         <View style={styles.rowItem}>
           <Text style={styles.rowLabel}>Status</Text>

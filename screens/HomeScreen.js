@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import moment from 'moment';
 import HeaderLogo from '../components/HeaderLogo.js';
-import RoomCarousel from '../components/RoomCarousel.js';
 import axios from 'axios';
 import { getApiUrl } from '../src/getApiUrl.js';
+import RoomCarousel from '../components/RoomCarousel.js';
 
 const HomeScreen = ({ navigation }) => {
   const [kodePinjam, setKodePinjam] = useState('');
@@ -32,7 +32,7 @@ const HomeScreen = ({ navigation }) => {
     }
 
     try {
-      const apiUrl = await getApiUrl();
+      const apiUrl = getApiUrl(); 
       const response = await axios.get(`${apiUrl}/api/peminjaman/${kodePinjam.trim()}`);
 
       const dataPeminjaman = response.data.data;
@@ -77,10 +77,10 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.card}>
+      {<View style={styles.card}>
         <Text style={styles.subTitle}>Ruangan Yang Sedang Dipakai</Text>
         <RoomCarousel />
-      </View>
+      </View>}
 
     </ScrollView>
   );

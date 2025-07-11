@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import axios from 'axios';
-import { getApiUrl } from '../src/getApiUrl';
+import { getApiUrl } from '../src/getApiUrl.js';
 
 const RoomCarousel = ({ onSelectRoom }) => {
   const [rooms, setRooms] = useState([]);
