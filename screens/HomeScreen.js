@@ -77,10 +77,10 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {<View style={styles.card}>
+      {/* {<View style={styles.card}>
         <Text style={styles.subTitle}>Ruangan Yang Sedang Dipakai</Text>
         <RoomCarousel />
-      </View>}
+      </View>} */}
 
     </ScrollView>
   );

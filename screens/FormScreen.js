@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -13,8 +12,9 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { getApiUrl } from '../src/getApiUrl.js';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-// Daftar slot waktu tetap
+// Slot waktu tetap
 const SLOT_ITEMS = [
   { label: '07:30 - 10:15', value: 1 },
   { label: '10:15 - 13:00', value: 2 },
@@ -36,7 +36,6 @@ const SLOT_TO_JAM = {
 const FormScreen = () => {
   const navigation = useNavigation();
 
-  // Form state
   const [namaPeminjam, setNamaPeminjam] = useState('');
   const [npm, setNpm] = useState('');
   const [jabatan, setJabatan] = useState('');
@@ -45,32 +44,30 @@ const FormScreen = () => {
   const [jumlahOrang, setJumlahOrang] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Dropdown slot waktu
   const [slot, setSlot] = useState(null);
   const [openSlot, setOpenSlot] = useState(false);
   const [itemsSlot, setItemsSlot] = useState(SLOT_ITEMS);
 
   const handleSubmit = async () => {
-    // Validasi input
     if (!namaPeminjam || !npm || !jabatan || !tujuan || !jumlahOrang || !slot) {
       alert('Semua kolom wajib diisi!');
       return;
     }
 
     const { mulai, selesai } = SLOT_TO_JAM[slot];
-    const idRuangan = 16; // default ruangan
+    const idRuangan = 16;
     const kodePeminjaman = 'FC' + new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
 
     const data = {
       kode_peminjaman: kodePeminjaman,
       nama_peminjam: namaPeminjam,
-      jabatan: jabatan,
+      jabatan,
       tanggal: tanggal.toISOString().split('T')[0],
       jam_mulai: mulai,
       jam_selesai: selesai,
       id_ruangan: idRuangan,
       id_slot: slot,
-      tujuan: tujuan,
+      tujuan,
       jumlah_orang: parseInt(jumlahOrang),
     };
 
@@ -97,11 +94,11 @@ const FormScreen = () => {
   };
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       contentContainerStyle={styles.container}
-      nestedScrollEnabled={true}
+      enableOnAndroid={true}
+      extraScrollHeight={100}
       keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
     >
       <View style={styles.headerPurple}>
         <Text style={styles.heading}>Pinjam Kelas</Text>
@@ -154,44 +151,48 @@ const FormScreen = () => {
           />
         )}
 
-        <Text style={styles.label}>Waktu Peminjaman</Text>
-        <DropDownPicker
-          open={openSlot}
-          value={slot}
-          items={itemsSlot}
-          setOpen={setOpenSlot}
-          setValue={setSlot}
-          setItems={setItemsSlot}
-          placeholder="Pilih Waktu"
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownContainer}
-          selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
-          selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
-          zIndex={1000}
-        />
+        {/* Z-index wrapper untuk Dropdown */}
+        <View style={{ zIndex: 1000 }}>
+          <Text style={styles.label}>Waktu Peminjaman</Text>
+          <DropDownPicker
+            open={openSlot}
+            value={slot}
+            items={itemsSlot}
+            setOpen={setOpenSlot}
+            setValue={setSlot}
+            setItems={setItemsSlot}
+            placeholder="Pilih Waktu"
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            selectedItemContainerStyle={{ backgroundColor: '#C4B5FD' }}
+            selectedItemLabelStyle={{ color: '#4C1D95', fontWeight: 'bold' }}
+          />
+        </View>
 
-        <Text style={styles.label}>Tujuan Peminjaman</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Belajar Kelompok"
-          value={tujuan}
-          onChangeText={setTujuan}
-        />
+        <View style={{ zIndex: 1 }}>
+          <Text style={styles.label}>Tujuan Peminjaman</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Belajar Kelompok"
+            value={tujuan}
+            onChangeText={setTujuan}
+          />
 
-        <Text style={styles.label}>Jumlah Orang</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="30"
-          keyboardType="numeric"
-          value={jumlahOrang}
-          onChangeText={setJumlahOrang}
-        />
+          <Text style={styles.label}>Jumlah Orang</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="30"
+            keyboardType="numeric"
+            value={jumlahOrang}
+            onChangeText={setJumlahOrang}
+          />
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Ajukan</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Ajukan</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 };
 
@@ -236,11 +237,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  rowTime: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
   dropdown: {
     borderColor: '#E5E7EB',
     borderRadius: 12,
@@ -252,7 +248,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     borderRadius: 12,
     backgroundColor: '#fff',
-    zIndex: 9999,
   },
   button: {
     backgroundColor: '#10B981',
